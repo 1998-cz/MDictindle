@@ -141,7 +141,26 @@ namespace MDictindle
         }
 
         /// <summary>
-        /// Tab2Opf 的功能
+        /// Tab2Opf 的功能，翻译自 tab2opf.py，下面是 License
+        /// 
+        /// <para>
+        /// Copyright (C) 2007 - Klokan Petr Přidal (www.klokan.cz)
+        ///
+        /// This library is free software; you can redistribute it and/or
+        /// modify it under the terms of the GNU Library General Public
+        /// License as published by the Free Software Foundation; either
+        /// version 2 of the License, or (at your option) any later version.
+        ///
+        /// This library is distributed in the hope that it will be useful,
+        /// but WITHOUT ANY WARRANTY; without even the implied warranty of
+        /// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+        /// Library General Public License for more details.
+        ///
+        /// You should have received a copy of the GNU Library General Public
+        /// License along with this library; if not, write to the
+        /// Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+        /// Boston, MA 02111-1307, USA.
+        /// </para>
         /// </summary>
         /// <param name="process"></param>
         /// <param name="logger"></param>
@@ -287,11 +306,12 @@ namespace MDictindle
         }
 #endif
 
+        private const string VersionName = "0.1.0";
         public static async Task Main(string[] args)
         {
-            Console.Write("MDictindle : 转换 Mdx 到 Mobi/Prc 的助手\n" +
+            Console.Write($"MDictindle v{VersionName} : 转换 Mdx 到 Mobi/Prc 的帮手\n" +
                           "本软件能够就较短的时间内简化词典，同时把已经转化成 .txt 的 .mdx 词典转换成 .opf 及附属文件，并且给记录了变形词的词典附上变形词支持\n" +
-                          "作者：子恒\n" +
+                          "作者：子恒\n本软件在 GPLv3.0 许可协议下开放源代码于 https://github.com/TsihenHo/MDictindle\n\n" +
                           "请输入词典源文件(.txt)路径：");
 
             var path2ProcessFile = Console.ReadLine();
