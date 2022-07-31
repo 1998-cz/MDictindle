@@ -9,6 +9,7 @@ public enum ExitCodes
     UnauthorizedAccess,
     // ReSharper disable once InconsistentNaming
     IO,
-    
+    FileNameWithAt,
+
     Unknown
 }
