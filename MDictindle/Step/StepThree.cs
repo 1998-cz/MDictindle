@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace MDictindle.Step;
 
 public class AbsStepThree : AbsStep
@@ -10,6 +8,7 @@ public class AbsStepThree : AbsStep
 <metadata>
 <dc-metadata>
 <dc:Identifier id=""uid"">{0}</dc:Identifier>
+<dc:Creator>MDctindle</dc:Creator>
 <dc:Title><h2>{1}</h2></dc:Title>
 <dc:Language>EN</dc:Language>
 </dc-metadata>
@@ -25,11 +24,11 @@ public class AbsStepThree : AbsStep
 ";
 
     private const string OpfLine =
-        "<item id=\"dictionary{0}\" href=\"{1}{0}.html\" media-type=\"text/x-oeb1-document\"/>\n";
+        "<item id=\"dictionary\" href=\"{0}.html\" media-type=\"text/x-oeb1-document\"/>\n";
 
     private const string OpfMiddle = "</manifest><spine>\n";
 
-    private const string OpfItemRef = "<itemref idref=\"dictionary{0}\"/>\n";
+    private const string OpfItemRef = "<itemref idref=\"dictionary\"/>\n";
 
     private const string OpfEnd = @"</spine>
 <tours/>
@@ -38,9 +37,9 @@ public class AbsStepThree : AbsStep
 ";
 
     // ReSharper disable once InconsistentNaming
-    private const string OpfEntryWithID = @"<idx:entry name=""word"" scriptable=""yes"" id=""{3}"">
-<idx:orth value=""{0}"">{4}</idx:orth><idx:key key=""{1}"">
-{2}
+    private const string OpfEntryWithID = @"<idx:entry name=""word"" scriptable=""yes"" id=""{2}"">
+<idx:orth value=""{0}"">{3}</idx:orth>
+{1}
 </idx:entry>
 <mbp:pagebreak/>
 ";
@@ -50,25 +49,19 @@ public class AbsStepThree : AbsStep
 
     public override void Do(DictManager manager, TextWriter logger)
     {
-        StreamWriter? opf = null;
-        
-        foreach (var entry in manager.Entries)
+        using var cmd = manager.DataBaseConnection.CreateCommand();
+        cmd.CommandText = "SELECT * FROM Dictionary";
+        var reader = cmd.ExecuteReader();
+        var opf = new StreamWriter(Path.Combine(manager.DictionaryDirPath, $"{manager.DictionaryName}.html"));
+        opf.AutoFlush = true;
+        opf.Write(@"<?xml version=""1.0"" encoding=""utf-8""?>
+<html xmlns:idx=""www.mobipocket.com"" xmlns:mbp=""www.mobipocket.com"" xmlns:xlink=""http://www.w3.org/1999/xlink"">");
+        if (manager.CssContent is not null)
         {
-            var index = entry.Index;
-            if (index % 2000 == 0)
-            {
-                opf?.Write(@"</mbp:frameset></body></html>");
-                // 太快了文件写不出来
-                Thread.Sleep(30);
-                opf?.Close();
-                GC.Collect();
-                logger.WriteLine($"第三步：正在处理第{index / 2000}号文件");
-                opf = new StreamWriter(Path.Combine(manager.DictionaryDirPath,
-                    $"{manager.DictionaryName}{index / 2000}.html"));
-                opf.AutoFlush = true;
-                opf.Write(@"<?xml version=""1.0"" encoding=""utf-8""?>
-<html xmlns:idx=""www.mobipocket.com"" xmlns:mbp=""www.mobipocket.com"" xmlns:xlink=""http://www.w3.org/1999/xlink"">
-<body>
+            opf.Write($"<head><style>\n{manager.CssContent}\n</style></head>\n");
+        }
+
+        opf.Write(@"<body>
 <mbp:pagebreak/>
 <mbp:frameset>
 <mbp:slave-frame display=""bottom"" device=""all"" breadth=""auto"" leftmargin=""0"" rightmargin=""0"" bottommargin=""0"" topmargin=""0"">
@@ -78,14 +71,25 @@ public class AbsStepThree : AbsStep
 </mbp:slave-frame>
 <mbp:pagebreak/>
 ");
-            }
 
-            opf!.Write(OpfEntryWithID, entry.Name, entry.Key, File.ReadAllText(entry.ExplanationFilePath), entry.Id, entry.GetInflString());
-            opf.Flush();
+        while (reader.Read())
+        {
+            // var index = (uint)reader.GetInt32(0);
+            var name = reader.GetString(1)!;
+            var explanation = reader.GetString(2)!;
+            var id = reader.GetString(0)!;
+            var infls = reader.GetString(3) ?? "";
+            var inflString = infls == "" ? "" : Utils.GetInflString(infls.Split(','));
+            opf.Write(OpfEntryWithID,
+                name.Replace("@", "at_")
+                    .Replace("&", "_and_")
+                    .Replace("=", "_eq_"),
+                explanation,
+                id,
+                inflString);
         }
-        var entriesNum = manager.EntryNumber - 1;
 
-        opf!.Write(@"</mbp:frameset></body></html>");
+        opf.Write(@"</mbp:frameset></body></html>");
         opf.Close();
 
         opf = new StreamWriter(File.Create(Path.Combine(manager.DictionaryDirPath, $"{manager.DictionaryName}.opf")));
@@ -94,16 +98,10 @@ public class AbsStepThree : AbsStep
         var ts = DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0);
         opf.Write(OpfHead1, Convert.ToInt64(ts.TotalSeconds), manager.DictionaryName);
         opf.Write(OpfHead2);
-        for (var j = 0; j <= entriesNum / 2000; j++)
-        {
-            opf.Write(OpfLine, j, manager.DictionaryName);
-        }
+        opf.Write(OpfLine, manager.DictionaryName);
 
         opf.Write(OpfMiddle);
-        for (var j = 0; j <= entriesNum / 2000; j++)
-        {
-            opf.Write(OpfItemRef, j);
-        }
+        opf.Write(OpfItemRef);
 
         opf.Write(OpfEnd);
         opf.Flush();

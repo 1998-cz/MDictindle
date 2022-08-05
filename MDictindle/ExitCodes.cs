@@ -10,6 +10,7 @@ public enum ExitCodes
     // ReSharper disable once InconsistentNaming
     IO,
     FileNameWithAt,
+    UnknownArgs,
 
     Unknown
 }

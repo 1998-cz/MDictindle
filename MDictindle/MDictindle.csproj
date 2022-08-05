@@ -7,9 +7,23 @@
         <Nullable>enable</Nullable>
         <Configurations>Debug;Release</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <PackageVersion>0.2.0</PackageVersion>
+        <Version>0.2.0</Version>
+        <Authors>子恒</Authors>
+        <Company />
+        <IsPackable>true</IsPackable>
+        <Title>MDictindle</Title>
+        <Description>本软件能够就较短的时间内简化词典，同时把已经转化成 .txt 的 .mdx 词典转换成 .opf 及附属文件，并且给记录了变形词的词典附上变形词支持、补全链接跳转、给单词的不同词性创建单独意项</Description>
+        <PackageProjectUrl>https://github.com/TsihenHo/MDictindle</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/TsihenHo/MDictindle</RepositoryUrl>
+        <Copyright>Copyright (c) 2022 Tsihen</Copyright>
+        <AssemblyVersion>0.2.0</AssemblyVersion>
+        <NeutralLanguage>zh-CN</NeutralLanguage>
+        <FileVersion>0.2.0</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="CommandLineParser" Version="2.9.1" />
       <PackageReference Include="System.Data.SQLite.Core" Version="1.0.116" />
     </ItemGroup>
 

@@ -19,23 +19,15 @@ public static class Utils
         return foundItems.ToArray();
     }
 
-    /// <summary>
-    /// 生成变形词跳转数据
-    /// </summary>
-    /// <param name="words"></param>
-    /// <returns></returns>
-    public static string GenerateInfl(IEnumerable<string> words)
+    public static string GetId(string id)
     {
-        const string front = "<idx:infl>";
-        const string end = "</idx:infl>";
-        var sb = new StringBuilder(front);
-        foreach (var word in words)
+        if (id.Contains('@') || id.Contains('=') || id.Contains('&'))
         {
-            sb.Append($"<idx:iform name=\"\" value=\"{word}\" />");
+            // 'h' for HashCode
+            id = ("h" + id.GetHashCode()).Replace('-', '0');
         }
 
-        sb.Append(end);
-        return sb.ToString();
+        return id;
     }
 
     public static IEnumerable<List<T>> GetPermutationAndCombination<T>(List<ISet<T>> sets)
@@ -63,32 +55,25 @@ public static class Utils
         return res;
     }
 
-    public static string CreateInflsForAWordOrPhrase(string wordOrPhrase,
-        IReadOnlyDictionary<string, ISet<string>> mappings, TextWriter logger)
+    public static string GetInflString(string[] infls)
     {
-        // 查看 是不是 短语
-        var words = wordOrPhrase.Split(' ');
-        if (words.Length == 1)
+        if (infls.Length == 0)
         {
-            if (!mappings.ContainsKey(wordOrPhrase)) return "";
-            var res = GenerateInfl(mappings[wordOrPhrase]);
-            return res;
+            return "";
         }
-        // 短语
-
+        
+        const string front = "<idx:infl>";
+        const string end = "</idx:infl>";
+        var sb = new StringBuilder(front);
+        foreach (var infl in infls)
         {
-            var listInfls = new List<ISet<string>>();
-            foreach (var singleWord in words)
+            if (infl != string.Empty)
             {
-                var set = mappings.ContainsKey(singleWord) ? mappings[singleWord] : new HashSet<string>();
-                set.Add(singleWord);
-                listInfls.Add(set);
+                sb.Append($"<idx:iform name=\"\" value=\"{infl}\" />");
             }
-
-            var res = GetPermutationAndCombination(listInfls);
-            var finalPhrases = res.Select(list => string.Join(' ', list)).ToList();
-
-            return GenerateInfl(finalPhrases);
         }
+
+        sb.Append(end);
+        return sb.ToString();
     }
 }

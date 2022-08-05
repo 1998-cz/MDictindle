@@ -1,7 +1,3 @@
-#if DEBUG
-#define SKIP_STEP_ZERO
-#endif
-
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -14,17 +10,26 @@ public class AbsStepZero : AbsStep
 
     public override void Do(DictManager manager, TextWriter logger)
     {
-#if SKIP_STEP_ZERO
-#else
         var tmp = Path.GetTempFileName();
         using var sw = new StreamWriter(File.Create(tmp));
         using var fs = File.OpenRead(manager.DictionaryFullPath);
         using var sr = new StreamReader(fs);
+        var reForCleaning = new Regex("<link rel=\"stylesheet\" type=\"text/css\" href=\".*?\">|<img.*?>|<a href=\"sound://.*?\"> ?</a>|<script.*?></script>|<span class=\"xref_to_full_entry\">See <a class=\"Ref\" href=\"bword://.+?\" title=\" definition in  \">full entry</a></span>|<a href=\"/definition/.+?\">", RegexOptions.Compiled);
         while (sr.ReadLine() is { } line)
         {
-            var newLine = Regex
-                // 分别对应 图片 音乐 JS
-                .Replace(line, "(<img.*?>|<a href=\"sound://.*?\"> ?</a>|<script.*?></script>)", _ => "")
+            var split = line.Split('\t');
+            var dt = split[0];
+
+            // kindle 不支持这么长的词组查询
+            // 但是作为词典应当提供学习的功能，故不删除
+            // if (Utils.GetSubStringIndexes(dt, " ", 0).Length >= 4)
+            // {
+                // continue;
+            // }
+            
+            var dd = split[1];
+            
+            var newLine = reForCleaning.Replace(line, "")
                 .Replace("something/somebody", "sth./sb.")
                 .Replace("somebody/something", "sb./sth.")
                 // 莫名其妙的缩进，影响阅读
@@ -33,27 +38,11 @@ public class AbsStepZero : AbsStep
                 .Replace(
                     "<a class=\"responsive_display_inline_on_smartphone link-right\" href=\"#relatedentries\">jump to other results</a>",
                     "");
-            // // 部分词典会自带添加标题，而我们在处理时会自动添加标题，使得标题重复
-            // newLine = Regex.Replace(newLine, "<h1.*?</h1>", _ => "");
-            // 没用的东西
-            newLine =
-                Regex.Replace(newLine,
-                    "<span class=\"xref_to_full_entry\">See <a class=\"Ref\" href=\"bword://.+?\" title=\" definition in  \">full entry</a></span>",
-                    _ => "");
-            // 程序无法解析
-            newLine =
-                Regex.Replace(newLine,
-                    "<a href=\"/definition/.+?\">",
-                    _ => "<a>");
-
             // 下面进行词性分隔
             // 当 @"id=""entryContent""" 存在多次时，才进行词行分隔
             if (newLine.IndexOf(@"id=""entryContent""", StringComparison.Ordinal) !=
                 newLine.LastIndexOf(@"id=""entryContent""", StringComparison.Ordinal))
             {
-                var split = newLine.Split('\t');
-                var dt = split[0];
-                var dd = split[1];
                 const string pattern = @"<div id=""entryContent"" class=""";
                 var indexes = Utils.GetSubStringIndexes(dd, pattern, 0);
                 var linkCss = dd[..indexes[0]];
@@ -84,7 +73,6 @@ public class AbsStepZero : AbsStep
         fs.Close();
         File.Delete(manager.DictionaryFullPath);
         File.Move(tmp, manager.DictionaryFullPath);
-#endif
     }
 
     public override Task DoAsync(DictManager manager, TextWriter logger)
